@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LeetCode Progress Tracker</title>
+    <!-- Link to Google Fonts for 'Inter' -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <!-- Tailwind CSS CDN for easy styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Custom styles to ensure Inter font is applied and for general body styling */
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f0f2f5; /* Light gray background */
+            display: flex;
+            justify-content: center;
+            align-items: flex-start; /* Align items to the start to prevent vertical centering issues on smaller content */
+            min-height: 100vh; /* Minimum height of the viewport */
+            padding: 20px; /* Padding around the content */
+            box-sizing: border-box; /* Include padding in element's total width and height */
+        }
+
+        /* Styling for the progress cards */
+        .progress-card {
+            background-color: #ffffff;
+            padding: 16px 20px;
+            margin-bottom: 12px;
+            border-radius: 10px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            transition: all 0.2s ease-in-out;
+        }
+
+        .progress-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+        }
+
+        .progress-card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
+        .progress-card-name {
+            font-size: 1.25rem; /* text-xl */
+            font-weight: 600; /* font-semibold */
+            color: #374151; /* gray-800 */
+        }
+
+        .progress-card-count {
+            font-size: 1.5rem; /* text-2xl */
+            font-weight: 700; /* font-bold */
+            color: #10b981; /* green-500 */
+        }
+
+        .progress-card-details {
+            display: flex;
+            justify-content: space-around;
+            font-size: 0.9rem;
+            color: #6b7280; /* gray-500 */
+            gap: 10px;
+            flex-wrap: wrap; /* Allow wrapping on small screens */
+        }
+
+        .progress-card-details span {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .progress-card-actions {
+            display: flex;
+            gap: 8px;
+            margin-top: 10px;
+            justify-content: flex-end; /* Align buttons to the right */
+        }
+
+        /* Button styling */
+        .progress-card-actions button {
+            padding: 8px 12px;
+            border-radius: 6px;
+            border: none;
+            cursor: pointer;
+            transition: background-color 0.2s ease-in-out;
+            font-weight: 500;
+        }
+
+        .progress-card-actions .edit-btn {
+            background-color: #3b82f6; /* blue-500 */
+            color: white;
+        }
+
+        .progress-card-actions .edit-btn:hover {
+            background-color: #2563eb; /* blue-600 */
+        }
+
+        .progress-card-actions .delete-btn {
+            background-color: #ef4444; /* red-500 */
+            color: white;
+        }
+
+        .progress-card-actions .delete-btn:hover {
+            background-color: #dc2626; /* red-600 */
+        }
+
+        /* Loading indicator styling */
+        #loadingIndicator {
+            display: none; /* Hidden by default */
+            text-align: center;
+            margin-top: 20px;
+            color: #4f46e5; /* Indigo color */
+            font-weight: 600;
+        }
+
+        /* Custom alert/modal styling */
+        .custom-alert {
+            display: none; /* Hidden by default */
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0,0,0,0.4); /* Semi-transparent black background */
+            justify-content: center;
+            align-items: center;
+        }
+
+        .custom-alert-content {
+            background-color: #fefefe;
+            margin: auto;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            width: 80%;
+            max-width: 400px;
+            text-align: center;
+        }
+
+        .custom-alert-content button {
+            background-color: #3b82f6;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-top: 15px;
+        }
+
+        .custom-alert-content button:hover {
+            background-color: #2563eb;
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 640px) {
+            .tracker-container {
+                width: 100%;
+                margin: 0 10px;
+            }
+            .input-group {
+                flex-direction: column;
+                gap: 12px;
+            }
+            .input-group input, .input-group button {
+                width: 100%;
+            }
+            .progress-card-actions {
+                flex-direction: column;
+                gap: 6px;
+            }
+            .progress-card-actions button {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body class="bg-gray-100 font-sans">
+    <div class="tracker-container bg-white p-8 rounded-xl shadow-lg w-full max-w-lg mt-10">
+        <h1 class="text-3xl font-bold text-center text-gray-800 mb-6">LeetCode Progress Tracker</h1>
+
+        <!-- Input section for adding/updating progress -->
+        <div class="input-group flex flex-col sm:flex-row gap-3 mb-6">
+            <input
+                type="text"
+                id="leetcodeUsernameInput"
+                placeholder="LeetCode Username"
+                class="flex-grow p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+            <button
+                id="fetchAddBtn"
+                class="bg-green-600 text-white p-3 rounded-lg hover:bg-green-700 transition duration-200 ease-in-out shadow-md"
+            >
+                Fetch & Add Progress
+            </button>
+        </div>
+
+        <!-- Loading indicator -->
+        <div id="loadingIndicator" class="text-center text-indigo-600 font-semibold mb-4">
+            Fetching data...
+        </div>
+
+        <!-- List where friends' progress will be displayed -->
+        <div id="progressList" class="space-y-4">
+            <!-- Progress cards will be dynamically added here by JavaScript -->
+        </div>
+    </div>
+
+    <!-- Custom Alert/Modal for messages -->
+    <div id="customAlert" class="custom-alert">
+        <div class="custom-alert-content">
+            <p id="alertMessage"></p>
+            <button id="alertOkBtn">OK</button>
+        </div>
+    </div>
+
+    <script>
+        // Get references to the HTML elements
+        const leetcodeUsernameInput = document.getElementById('leetcodeUsernameInput');
+        const fetchAddBtn = document.getElementById('fetchAddBtn');
+        const progressList = document.getElementById('progressList');
+        const loadingIndicator = document.getElementById('loadingIndicator');
+        const customAlert = document.getElementById('customAlert');
+        const alertMessage = document.getElementById('alertMessage');
+        const alertOkBtn = document.getElementById('alertOkBtn');
+
+        // Array to store progress data
+        let friendsProgress = [];
+
+        // Key for localStorage
+        const STORAGE_KEY = 'leetcodeProgressTracker';
+
+        // Base URL for the unofficial LeetCode stats API
+        const LEETCODE_API_BASE_URL = 'https://leetcode-stats-api.herokuapp.com/';
+
+        // Function to show a custom alert message
+        function showAlert(message) {
+            alertMessage.textContent = message;
+            customAlert.style.display = 'flex'; // Use flex to center the content
+        }
+
+        // Function to hide the custom alert
+        alertOkBtn.addEventListener('click', () => {
+            customAlert.style.display = 'none';
+        });
+
+        // Function to save data to localStorage
+        function saveData() {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(friendsProgress));
+        }
+
+        // Function to load data from localStorage
+        function loadData() {
+            const storedData = localStorage.getItem(STORAGE_KEY);
+            if (storedData) {
+                friendsProgress = JSON.parse(storedData);
+            }
+            renderProgress(); // Render the loaded data
+        }
+
+        // Function to render/update the progress list in the UI
+        function renderProgress() {
+            progressList.innerHTML = ''; // Clear existing list items
+
+            if (friendsProgress.length === 0) {
+                progressList.innerHTML = '<p class="text-center text-gray-500">No progress tracked yet. Add a LeetCode username!</p>';
+                return;
+            }
+
+            // Sort friends by total problems solved in descending order
+            friendsProgress.sort((a, b) => b.totalSolved - a.totalSolved);
+
+            friendsProgress.forEach((friend, index) => {
+                const card = document.createElement('div');
+                card.classList.add('progress-card');
+
+                card.innerHTML = `
+                    <div class="progress-card-header">
+                        <span class="progress-card-name">${friend.username}</span>
+                        <span class="progress-card-count">${friend.totalSolved} Total</span>
+                    </div>
+                    <div class="progress-card-details">
+                        <span>Easy: <b class="text-green-600">${friend.easySolved}</b></span>
+                        <span>Medium: <b class="text-yellow-600">${friend.mediumSolved}</b></span>
+                        <span>Hard: <b class="text-red-600">${friend.hardSolved}</b></span>
+                    </div>
+                    <div class="progress-card-actions">
+                        <button class="edit-btn bg-blue-500 hover:bg-blue-600" data-index="${index}">Update</button>
+                        <button class="delete-btn bg-red-500 hover:bg-red-600" data-index="${index}">Remove</button>
+                    </div>
+                `;
+
+                // Add event listeners for update and remove buttons
+                card.querySelector('.edit-btn').addEventListener('click', (event) => {
+                    const idx = parseInt(event.target.dataset.index);
+                    // For "Update", we'll re-fetch the data for this user
+                    fetchAndAddProgress(friendsProgress[idx].username);
+                });
+
+                card.querySelector('.delete-btn').addEventListener('click', (event) => {
+                    const idx = parseInt(event.target.dataset.index);
+                    deleteProgress(idx);
+                });
+
+                progressList.appendChild(card);
+            });
+        }
+
+        // Function to fetch LeetCode progress and add/update it
+        async function fetchAndAddProgress(usernameToFetch = null) {
+            const username = usernameToFetch || leetcodeUsernameInput.value.trim();
+
+            if (username === '') {
+                showAlert('Please enter a LeetCode username.');
+                return;
+            }
+
+            loadingIndicator.style.display = 'block'; // Show loading indicator
+            fetchAddBtn.disabled = true; // Disable button during fetch
+
+            try {
+                const response = await fetch(`${LEETCODE_API_BASE_URL}${username}`);
+                const data = await response.json();
+
+                if (data.status === 'error') {
+                    showAlert(`Error fetching data for "${username}": ${data.message || 'User not found or API error.'}`);
+                    return;
+                }
+
+                if (data.status === 'success') {
+                    const newProgress = {
+                        username: username,
+                        totalSolved: data.totalSolved,
+                        easySolved: data.easySolved,
+                        mediumSolved: data.mediumSolved,
+                        hardSolved: data.hardSolved
+                    };
+
+                    // Check if friend already exists
+                    const existingFriendIndex = friendsProgress.findIndex(f => f.username.toLowerCase() === username.toLowerCase());
+
+                    if (existingFriendIndex > -1) {
+                        // Update existing friend's progress
+                        friendsProgress[existingFriendIndex] = newProgress;
+                        showAlert(`Progress for "${username}" updated successfully!`);
+                    } else {
+                        // Add new friend
+                        friendsProgress.push(newProgress);
+                        showAlert(`Progress for "${username}" added successfully!`);
+                    }
+
+                    saveData(); // Save to localStorage
+                    renderProgress(); // Re-render the list
+                    leetcodeUsernameInput.value = ''; // Clear input field
+                } else {
+                    showAlert('Unexpected API response. Please try again.');
+                }
+
+            } catch (error) {
+                console.error('Fetch error:', error);
+                showAlert('Failed to fetch LeetCode data. Please check the username or your internet connection.');
+            } finally {
+                loadingIndicator.style.display = 'none'; // Hide loading indicator
+                fetchAddBtn.disabled = false; // Re-enable button
+            }
+        }
+
+        // Function to delete progress
+        function deleteProgress(index) {
+            // Using custom alert instead of confirm()
+            showAlert(`Are you sure you want to remove ${friendsProgress[index].username}'s progress?`);
+            alertOkBtn.onclick = () => { // Reassign onclick for confirmation
+                friendsProgress.splice(index, 1); // Remove the item from the array
+                saveData(); // Save to localStorage
+                renderProgress(); // Re-render the list
+                customAlert.style.display = 'none'; // Hide alert after action
+                alertOkBtn.onclick = null; // Reset onclick to default
+            };
+        }
+
+        // Event listeners
+        fetchAddBtn.addEventListener('click', () => fetchAndAddProgress());
+
+        leetcodeUsernameInput.addEventListener('keypress', (event) => {
+            if (event.key === 'Enter') {
+                fetchAndAddProgress();
+            }
+        });
+
+        // Load data when the page loads
+        document.addEventListener('DOMContentLoaded', loadData);
+    </script>
+</body>
+</html>
