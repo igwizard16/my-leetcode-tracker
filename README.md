@@ -29,6 +29,3 @@ Track your friends' LeetCode progress in real-time with streaks, rankings, and p
 - Processes submission calendar to calculate streak
 - Dynamically renders user cards
 - Sorts users based on total problems solved
-
-
-<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/f9ec3e82-3896-4e39-a989-90f7eb416279" />
